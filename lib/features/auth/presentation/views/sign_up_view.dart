@@ -237,13 +237,13 @@ class _SignUpViewState extends ConsumerState<SignUpView> {
                 context.gapV(32),
                 Text.rich(
                   TextSpan(
-                    text: 'By Signing up, you agree to our ',
+                    text: 'By signing up, you agree to our ',
                     style: context.textTheme.bodySmall?.copyWith(
                       color: context.colors.textSecondary,
                     ),
                     children: [
                       TextSpan(
-                        text: 'terms of service',
+                        text: 'Terms of Service',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.colors.primary,
                         ),
@@ -251,7 +251,7 @@ class _SignUpViewState extends ConsumerState<SignUpView> {
                       ),
                       const TextSpan(text: ' and '),
                       TextSpan(
-                        text: 'privacy policy',
+                        text: 'Privacy Policy',
                         style: context.textTheme.bodySmall?.copyWith(
                           color: context.colors.primary,
                         ),
