@@ -32,16 +32,31 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
 
       final List<Workspace> workspaces = [];
       for (var item in data) {
-        if (item is Map<String, dynamic>) {
-          workspaces.add(
-            Workspace(
-              id: item['id'] as String? ?? '1',
-              name: item['name'] as String? ?? 'Workspace',
-              avatar: item['logo_url'] as String? ?? '',
-              channelsCount: (item['channels_count'] as num?)?.toInt() ?? 0,
-            ),
+        if (item is! Map<String, dynamic>) continue;
+
+        final id = _parseOrganisationId(item['id']);
+        if (id == null) {
+          // Never invent an id. Defaulting every organisation that lacks one
+          // to '1' collapsed the whole list to a single workspace: the second
+          // was dropped by addWorkspace's de-duplication and could not be
+          // selected, because switchWorkspace returns early when the id already
+          // matches. Skipping it keeps the list honest instead.
+          AppLogger.w(
+            'Skipping organisation without an id (name: ${item['name']})',
+            tag: 'WorkspaceNotifier',
           );
+          continue;
         }
+        if (workspaces.any((workspace) => workspace.id == id)) continue;
+
+        workspaces.add(
+          Workspace(
+            id: id,
+            name: item['name'] as String? ?? 'Workspace',
+            avatar: item['logo_url'] as String? ?? '',
+            channelsCount: (item['channels_count'] as num?)?.toInt() ?? 0,
+          ),
+        );
       }
 
       // Keep the current selection if it's still in the list (e.g. an org
@@ -67,6 +82,18 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       );
       state = const WorkspaceState(errorMessage: loadErrorMessage);
     }
+  }
+
+  /// Reads an organisation's id exactly as the API returned it, without
+  /// substituting a default. Returns null when the payload carries no usable
+  /// id, so the caller can leave that organisation out rather than invent one.
+  static String? _parseOrganisationId(Object? value) {
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+    if (value is num) return value.toString();
+    return null;
   }
 
   // Demo organisations, only used when the app runs with USE_MOCK_DATA.
