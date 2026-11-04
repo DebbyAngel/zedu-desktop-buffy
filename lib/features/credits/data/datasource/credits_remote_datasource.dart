@@ -124,7 +124,10 @@ class CreditsRemoteDataSourceImpl implements CreditsRemoteDataSource {
   }
 }
 
-const _mockUsage = <String, dynamic>{
+/// Mock usage is deliberately mutable: [CreditsRemoteDataSourceImpl.verifyPayment]
+/// adds the purchased credits to it. It was `const`, so that assignment threw
+/// UnsupportedError and mock verification never updated the balance.
+final Map<String, dynamic> _mockUsage = <String, dynamic>{
   'balance': 10,
   'total_purchased': 10,
   'total_consumed': 0,
