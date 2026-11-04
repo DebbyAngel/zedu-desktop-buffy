@@ -172,7 +172,7 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
               child: Column(
                 children: teamMembers.map((member) {
                   final name = member.name ?? member.email;
-                  final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+                  final initial = mentionAvatarInitial(name);
                   return InkWell(
                     onTap: () => _insertMention(name),
                     child: Padding(
@@ -410,4 +410,16 @@ class _ToolbarButton extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
     );
   }
+}
+
+/// The avatar initial shown next to a team member in the mention suggestions.
+///
+/// Trims first, so a whitespace-only name falls back to '?' instead of
+/// rendering a blank circle, and reads the first *rune* rather than the first
+/// UTF-16 code unit, so an emoji at the start of a name is not split into a
+/// lone surrogate and drawn as a corrupt glyph.
+String mentionAvatarInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) return '?';
+  return String.fromCharCode(trimmed.runes.first).toUpperCase();
 }
