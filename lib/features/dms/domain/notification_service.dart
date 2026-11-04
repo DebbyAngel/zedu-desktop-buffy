@@ -1,6 +1,8 @@
 import 'package:zedu/core/core.dart';
 import 'package:zedu/features/features.dart';
 
+import 'notification_preview.dart';
+
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(ref);
 });
@@ -56,19 +58,11 @@ class NotificationService {
       _lastNotificationTimes[senderId] = now;
     }
 
-    String contentPreview = (message['content'] ?? '').toString();
-    if (contentPreview.isEmpty) {
-      final media = message['media'] as List<dynamic>? ?? [];
-      if (media.isNotEmpty) {
-        contentPreview = 'Sent an attachment';
-      } else {
-        contentPreview = 'New message';
-      }
-    }
-
-    if (contentPreview.length > 80) {
-      contentPreview = '${contentPreview.substring(0, 77)}...';
-    }
+    final media = message['media'] as List<dynamic>? ?? const <dynamic>[];
+    final contentPreview = notificationPreview(
+      content: message['content'],
+      hasMedia: media.isNotEmpty,
+    );
 
     final notification = LocalNotification(
       title: 'New DM from $senderName',
