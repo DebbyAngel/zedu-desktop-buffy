@@ -73,6 +73,10 @@ class CreditsNotifier extends Notifier<CreditsState> {
     required String email,
   }) async {
     if (package.isFree) return null;
+    // One checkout at a time. Without this a second tap while the first
+    // request is in flight creates a competing checkout session, and both
+    // responses then race to own the purchasing state.
+    if (state.status == CreditsStatus.purchasing) return null;
 
     state = state.copyWith(
       status: CreditsStatus.purchasing,
