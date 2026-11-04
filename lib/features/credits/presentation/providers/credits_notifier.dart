@@ -6,6 +6,10 @@ class CreditsNotifier extends Notifier<CreditsState> {
 
   static const _tag = 'CreditsNotifier';
 
+  /// Bumped by every [load]; an older request that finishes later sees a
+  /// different value and stops instead of overwriting newer state.
+  int _loadGeneration = 0;
+
   @override
   CreditsState build() {
     _repository = ref.read(creditsRepositoryProvider);
@@ -14,6 +18,9 @@ class CreditsNotifier extends Notifier<CreditsState> {
 
   Future<void> load({String? orgId}) async {
     if (orgId == null || orgId.isEmpty) return;
+
+    final generation = ++_loadGeneration;
+
     state = state.copyWith(
       status: CreditsStatus.loading,
       clearError: true,
@@ -55,6 +62,10 @@ class CreditsNotifier extends Notifier<CreditsState> {
       case Failure<List<CreditTransaction>>():
         error ??= transactionsResult.error.friendlyMessage;
     }
+
+    // A newer load owns the state now: drop this one's results, success or
+    // failure, so an earlier workspace cannot replace the current balance.
+    if (generation != _loadGeneration) return;
 
     state = state.copyWith(
       status: error != null && packages.isEmpty
