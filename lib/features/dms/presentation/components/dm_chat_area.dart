@@ -461,8 +461,72 @@ class _DmChatAreaState extends ConsumerState<DmChatArea> {
                         ),
                       ),
                     ),
-                  );
-                }
+    );
+  }
+
+  Widget? _buildLinkPreview(String content) {
+    final urlMatch = urlRegex.firstMatch(content);
+    if (urlMatch == null) return null;
+    final url = urlMatch.group(0)!;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0x0A6458F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFF6458F5).withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.link, color: Color(0xFF6458F5), size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  url.length > 60 ? '${url.substring(0, 57)}...' : url,
+                  style: const TextStyle(
+                    color: Color(0xFF6458F5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tap to open link',
+                  style: TextStyle(
+                    color: const Color(0xFF6458F5).withValues(alpha: 0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              final uri = Uri.tryParse(url);
+              if (uri != null && uri.isAbsolute) {
+                launchUrl(uri);
+              }
+            },
+            child: const Icon(
+              Icons.open_in_new,
+              color: Color(0xFF6458F5),
+              size: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
                 return const SizedBox.shrink();
               },
             ),
@@ -750,8 +814,13 @@ class _MessageBubble extends ConsumerWidget {
     final italicRegex = RegExp(r'(?<!\*)\*(.*?)\*(?!\*)', dotAll: true);
     final strikeRegex = RegExp(r'~~(.*?)~~', dotAll: true);
     final codeRegex = RegExp(r'`(.*?)`', dotAll: true);
+    final urlRegex = RegExp(
+      r'https?://[^\s<>"\']+',
+      dotAll: true,
+      caseSensitive: false,
+    );
 
-    final allPatterns = [boldRegex, italicRegex, strikeRegex, codeRegex];
+    final allPatterns = [boldRegex, italicRegex, strikeRegex, codeRegex, urlRegex];
     final combined = RegExp(
       allPatterns.map((r) => r.pattern).join('|'),
       dotAll: true,
@@ -808,6 +877,23 @@ class _MessageBubble extends ConsumerWidget {
           TextSpan(
             text: inner,
             style: defaultStyle.copyWith(fontStyle: FontStyle.italic),
+          ),
+        );
+      } else if (urlRegex.hasMatch(raw)) {
+        spans.add(
+          TextSpan(
+            text: raw,
+            style: defaultStyle.copyWith(
+              color: const Color(0xFF6458F5),
+              decoration: TextDecoration.underline,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                final uri = Uri.tryParse(raw);
+                if (uri != null && uri.isAbsolute) {
+                  launchUrl(uri);
+                }
+              },
           ),
         );
       } else {
@@ -1146,6 +1232,7 @@ class _MessageBubble extends ConsumerWidget {
                       ),
                     ),
                   ),
+                if (content.isNotEmpty) _buildLinkPreview(content),
                 if (media.isNotEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: content.isNotEmpty ? 8 : 0),
