@@ -41,7 +41,7 @@ class SearchPanel extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: widget.onClose,
+                  onPressed: onClose,
                   icon: Icon(Icons.close, color: colors.textHint),
                   splashRadius: 20,
                   tooltip: 'Close search',
