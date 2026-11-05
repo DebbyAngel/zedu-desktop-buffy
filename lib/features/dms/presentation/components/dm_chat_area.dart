@@ -843,7 +843,11 @@ class _MessageBubble extends ConsumerWidget {
     final rawContent = message['content'] as String? ?? '';
     // A voice note or file sent without text carries an empty paragraph
     // (`<p></p>`). Show no text bubble for it instead of the literal tags.
-    final content = rawContent.replaceAll(RegExp(r'<[^>]*>'), '').trim().isEmpty
+    // Preserve all other angle-bracket text (email addresses, code tags, etc.)
+    // instead of stripping them entirely.
+    final trimmed = rawContent.trim();
+    final content = trimmed.isEmpty ||
+            RegExp(r'^\s*<[^>]*>\s*$').hasMatch(trimmed)
         ? ''
         : rawContent;
     final createdAt =
