@@ -103,6 +103,10 @@ String htmlMessageToMarkdown(String content) {
       } else {
         newLine();
       }
+    } else {
+      // Unknown tag — write it back as literal text so generic types,
+      // angle-bracketed emails, and other non-HTML content are preserved.
+      out.write(_decodeEntities(match.group(0)!));
     }
   }
   writeText(content.substring(index));

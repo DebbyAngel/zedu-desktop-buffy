@@ -33,13 +33,12 @@ class ChannelMessage {
       avatarUrl:
           nonEmpty(json['avatar_url']) ?? nonEmpty(json['default_avatar_url']),
       // Messages sent from the web app arrive as HTML (`<p>hi</p>`).
-      text: _decodeHtmlEntities(
+      text: htmlMessageToMarkdown(
         (json['message']?.toString() ?? '')
             .replaceAll(
               RegExp(r'</(p|div|li)>\s*<(p|div|li|ul|ol)\b[^>]*>|<br\s*/?>'),
               '\n',
-            )
-            .replaceAll(RegExp(r'<[^>]*>'), ''),
+            ),
       ).trim(),
       createdAt: DateTime.tryParse(
         json['created_at']?.toString() ?? '',
