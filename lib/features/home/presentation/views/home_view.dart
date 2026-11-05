@@ -284,8 +284,6 @@ class HomeChatArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Shows the channel picked in the sidebar. Its messages are not listed
-    // yet, so the header and welcome text carry the name.
     final chat = ref.watch(activeChatProvider);
     final channels = ref.watch(channelProvider).value ?? const <Channel>[];
     final channelName = chat.type == ActiveChatType.channel
@@ -299,53 +297,117 @@ class HomeChatArea extends ConsumerWidget {
       }
     }
 
+    final isArchived = selected?.archived ?? false;
+
     return Column(
       children: [
-        _buildChatHeader(context, channelName),
-        Expanded(child: _buildWelcomeScreen(context, channelName)),
-        DmMessageComposer(
-          key: ValueKey(selected?.id ?? channelName),
-          recipientName: '#$channelName',
-          channelId: selected?.id ?? '',
-          isChannel: true,
+        _buildChatHeader(context, channelName, selected, onChannelHeaderTap),
+        if (isArchived)
+          _buildArchivedBanner(context),
+        Expanded(
+          child: isArchived
+              ? _buildWelcomeScreen(context, channelName)
+              : _buildWelcomeScreen(context, channelName),
         ),
+        if (!isArchived)
+          DmMessageComposer(
+            key: ValueKey(selected?.id ?? channelName),
+            recipientName: '#$channelName',
+            channelId: selected?.id ?? '',
+            isChannel: true,
+          ),
       ],
     );
   }
 
-  Widget _buildChatHeader(BuildContext context, String channelName) {
-    final colors = context.colors;
-
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colors.divider)),
+  void onChannelHeaderTap(BuildContext context, Channel? channel) {
+    if (channel == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('# ${channel.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Description: ${channel.description.isNotEmpty ? channel.description : 'No description'}'),
+            const SizedBox(height: 8),
+            Text('Topic: ${channel.topic ?? 'No topic'}'),
+            const SizedBox(height: 8),
+            Text('Members: ${channel.membersCount}'),
+            const SizedBox(height: 8),
+            Text('Archived: ${channel.archived ? 'Yes' : 'No'}'),
+            const SizedBox(height: 8),
+            Text('Organization: ${channel.organisationId.isNotEmpty ? channel.organisationId : 'Personal'}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildArchivedBanner(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: colors.warning,
       child: Row(
         children: [
+          const Icon(Icons.archive, size: 18, color: Colors.white),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '# $channelName',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
+              'This channel is archived. Messages are read-only.',
+              style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
-          _HeaderAction(icon: Icons.headphones_outlined, label: 'Start Buzz'),
-          const SizedBox(width: 12),
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: colors.accent,
-            child: Icon(Icons.person, size: 18, color: colors.onPrimary),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.more_vert, color: colors.textHint),
         ],
+      ),
+    );
+  }
+
+  Widget _buildChatHeader(BuildContext context, String channelName, Channel? channel, void Function(BuildContext, Channel?) onTap) {
+    final colors = context.colors;
+
+    return InkWell(
+      onTap: () => onTap(context, channel),
+      child: Container(
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: colors.divider)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '# $channelName',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ),
+            _HeaderAction(icon: Icons.headphones_outlined, label: 'Start Buzz'),
+            const SizedBox(width: 12),
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: colors.accent,
+              child: Icon(Icons.person, size: 18, color: colors.onPrimary),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.more_vert, color: colors.textHint),
+          ],
+        ),
       ),
     );
   }

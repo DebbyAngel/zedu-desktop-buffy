@@ -11,20 +11,23 @@ class SidebarChannelList extends ConsumerWidget {
     final orgId = ref.watch(
       workspaceProvider.select((s) => s.selectedWorkspace?.id),
     );
+    final colors = context.colors;
     // Right after a workspace switch, and when the new workspace's load
     // failed, the state still holds the previous workspace's channels. Show
     // only channels of the selected workspace, and none after a failed load.
     // A channel without an organisation id is kept, since we can't tell.
-    final channels =
+    final allChannels =
         (channelState.hasError
                 ? const <Channel>[]
                 : channelState.value ?? const <Channel>[])
-            .where(
-              (c) =>
-                  !c.archived &&
-                  (c.organisationId.isEmpty || c.organisationId == orgId),
-            )
-            .toList();
+        .where(
+          (c) =>
+              (c.organisationId.isEmpty || c.organisationId == orgId),
+        )
+        .toList();
+
+    final activeChannels = allChannels.where((c) => !c.archived).toList();
+    final archivedChannels = allChannels.where((c) => c.archived).toList();
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 240),
@@ -32,13 +35,36 @@ class SidebarChannelList extends ConsumerWidget {
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         children: [
-          for (final channel in channels)
+          for (final channel in activeChannels)
             _SidebarChannelItem(
               label: channel.name,
               onTap: () => ref
                   .read(activeChatProvider.notifier)
                   .selectChannel(channel.name),
+              isArchived: false,
             ),
+          if (archivedChannels.isNotEmpty) ...[
+            const Divider(height: 24, thickness: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Archived',
+                style: TextStyle(
+                  color: colors.textHint.withValues(alpha: 0.6),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            for (final channel in archivedChannels)
+              _SidebarChannelItem(
+                label: channel.name,
+                onTap: () => ref
+                    .read(activeChatProvider.notifier)
+                    .selectChannel(channel.name),
+                isArchived: true,
+              ),
+          ],
         ],
       ),
     );
@@ -48,8 +74,13 @@ class SidebarChannelList extends ConsumerWidget {
 class _SidebarChannelItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final bool isArchived;
 
-  const _SidebarChannelItem({required this.label, required this.onTap});
+  const _SidebarChannelItem({
+    required this.label,
+    required this.onTap,
+    this.isArchived = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +93,9 @@ class _SidebarChannelItem extends StatelessWidget {
         child: Row(
           children: [
             Text(
-              '#',
+              isArchived ? '📦 #' : '#',
               style: TextStyle(
-                color: colors.onPrimary.withValues(alpha: 0.54),
+                color: colors.onPrimary.withValues(alpha: isArchived ? 0.3 : 0.54),
                 fontSize: 18,
               ),
             ),
@@ -74,7 +105,11 @@ class _SidebarChannelItem extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colors.onPrimary, fontSize: 15),
+                style: TextStyle(
+                  color: colors.onPrimary.withValues(alpha: isArchived ? 0.5 : 1.0),
+                  fontSize: 15,
+                  decoration: isArchived ? TextDecoration.lineThrough : null,
+                ),
               ),
             ),
           ],
