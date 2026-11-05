@@ -13,6 +13,41 @@ class DmChatArea extends ConsumerStatefulWidget {
 class _DmChatAreaState extends ConsumerState<DmChatArea> {
   bool _isDragging = false;
   final _composerKey = GlobalKey<DmMessageComposerState>();
+  final ScrollController _scrollController = ScrollController();
+  bool _showJumpButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        _showJumpButton = _scrollController.offset > 100;
+      });
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        ref
+            .read(
+              chatHistoryProvider(widget.conversation.channelId),
+            )
+            .loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _jumpToBottom() async {
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
+  }
 
   String get _recipientHandle {
     final parts = widget.conversation.displayName
@@ -278,68 +313,41 @@ class _DmChatAreaState extends ConsumerState<DmChatArea> {
                       );
                       final messages = historyState.messages;
 
-                      return NotificationListener<ScrollNotification>(
-                        onNotification: (ScrollNotification scrollInfo) {
-                          if (!historyState.isLoading &&
-                              historyState.hasMore &&
-                              scrollInfo.metrics.pixels >=
-                                  scrollInfo.metrics.maxScrollExtent * 0.8) {
-                            ref
-                                .read(
-                                  chatHistoryProvider(
-                                    widget.conversation.channelId,
-                                  ),
-                                )
-                                .loadMore();
-                          }
-                          return false;
-                        },
-                        child: CustomScrollView(
+                      return ListView.builder(
+                          controller: _scrollController,
                           reverse: true,
-                          slivers: [
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final msg = messages[index];
-                                  return _MessageBubble(
-                                    message: msg,
-                                    conversation: widget.conversation,
-                                    channelId: widget.conversation.channelId,
-                                    onEdit: (id, text) => _composerKey
-                                        .currentState
-                                        ?.enterEditMode(id, text),
-                                  );
-                                }, childCount: messages.length),
-                              ),
-                            ),
-                            if (historyState.isLoading)
-                              const SliverToBoxAdapter(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                              ),
-                            if (!historyState.hasMore)
-                              SliverToBoxAdapter(
-                                child: DmProfileCard(
-                                  conversation: widget.conversation,
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = messages[index];
+                            return _MessageBubble(
+                              message: msg,
+                              conversation: widget.conversation,
+                              channelId: widget.conversation.channelId,
+                              onEdit: (id, text) => _composerKey
+                                  .currentState
+                                  ?.enterEditMode(id, text),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
+                if (historyState.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                if (!historyState.hasMore)
+                  DmProfileCard(
+                    conversation: widget.conversation,
+                  ),
                 DmMessageComposer(
                   key: _composerKey,
                   recipientName: _recipientHandle,
@@ -348,6 +356,15 @@ class _DmChatAreaState extends ConsumerState<DmChatArea> {
                 ),
               ],
             ),
+            if (_showJumpButton)
+              Positioned(
+                right: 16,
+                bottom: 100,
+                child: FloatingActionButton.small(
+                  onPressed: _jumpToBottom,
+                  child: const Icon(Icons.keyboard_arrow_down, size: 20),
+                ),
+              ),
 
             // FULL PAGE MODE INJECTION
             Consumer(
