@@ -946,6 +946,79 @@ class _MessageBubble extends ConsumerWidget {
     }
   }
 
+  void _showProfileDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: colors.primary,
+              backgroundImage:
+                  senderAvatarUrl != null && senderAvatarUrl.isNotEmpty
+                  ? NetworkImage(senderAvatarUrl)
+                  : null,
+              child: senderAvatarUrl == null || senderAvatarUrl.isEmpty
+                  ? Text(
+                      senderInitial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    senderName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (widget.conversation.participantId != null &&
+                      widget.conversation.participantId.isNotEmpty)
+                    Text(
+                      'User ID: ${widget.conversation.participantId}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  if (widget.conversation.participantEmail != null &&
+                      widget.conversation.participantEmail!.isNotEmpty)
+                    Text(
+                      widget.conversation.participantEmail!,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: const SizedBox.shrink(),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+          if (!isMe)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                // Open DM with this user
+              },
+              child: const Text('Message'),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
@@ -997,23 +1070,26 @@ class _MessageBubble extends ConsumerWidget {
             : MainAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
-              radius: 15,
-              backgroundColor: colors.primary,
-              backgroundImage:
-                  senderAvatarUrl != null && senderAvatarUrl.isNotEmpty
-                  ? NetworkImage(senderAvatarUrl)
-                  : null,
-              child: senderAvatarUrl == null || senderAvatarUrl.isEmpty
-                  ? Text(
-                      senderInitial,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    )
-                  : null,
+            GestureDetector(
+              onTap: () => _showProfileDialog(context),
+              child: CircleAvatar(
+                radius: 15,
+                backgroundColor: colors.primary,
+                backgroundImage:
+                    senderAvatarUrl != null && senderAvatarUrl.isNotEmpty
+                    ? NetworkImage(senderAvatarUrl)
+                    : null,
+                child: senderAvatarUrl == null || senderAvatarUrl.isEmpty
+                    ? Text(
+                        senderInitial,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      )
+                    : null,
+              ),
             ),
             const SizedBox(width: 12),
           ],
