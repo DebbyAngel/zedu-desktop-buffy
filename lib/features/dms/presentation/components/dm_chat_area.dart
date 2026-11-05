@@ -63,6 +63,8 @@ class _DmChatAreaState extends ConsumerState<DmChatArea> {
         ref
             .read(dmConversationActionsProvider.notifier)
             .togglePinned(conversation.channelId);
+      case 'view_pinned_messages':
+        await _showPinnedMessages(context);
       case 'search_in_conversation':
         await _showConversationSearch();
       case 'view_files':
@@ -138,6 +140,49 @@ class _DmChatAreaState extends ConsumerState<DmChatArea> {
       builder: (context) => _ConversationSearchDialog(
         displayName: widget.conversation.displayName,
         messages: history.messages,
+      ),
+    );
+  }
+
+  Future<void> _showPinnedMessages(BuildContext context) async {
+    final history = ref.read(
+      chatHistoryProvider(widget.conversation.channelId),
+    );
+    final pinned = history.messages.where((m) => m['isPinned'] == true).toList();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pinned messages'),
+        content: SizedBox(
+          width: 420,
+          height: 300,
+          child: pinned.isEmpty
+              ? const Center(child: Text('No pinned messages'))
+              : ListView.builder(
+                  itemCount: pinned.length,
+                  itemBuilder: (context, index) {
+                    final msg = pinned[index];
+                    return ListTile(
+                      leading: const Icon(Icons.push_pin, size: 18),
+                      title: Text(
+                        msg['content'] ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        msg['sender_name'] ?? msg['username'] ?? 'Someone',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
@@ -625,6 +670,13 @@ class _DmChatHeader extends StatelessWidget {
                 ),
               ),
               PopupMenuItem(
+                value: 'view_pinned_messages',
+                child: Text(
+                  'View pinned messages',
+                  style: TextStyle(color: colors.textPrimary),
+                ),
+              ),
+              PopupMenuItem(
                 value: 'search_in_conversation',
                 child: Text(
                   'Search in conversation',
@@ -835,6 +887,48 @@ class _MessageBubble extends ConsumerWidget {
     }
   }
 
+  Future<void> _togglePinMessage(
+    BuildContext context,
+    WidgetRef ref,
+    String messageId,
+  ) async {
+    final history = ref.read(chatHistoryProvider(channelId));
+    final index = history.messages.indexWhere((m) => m['id'] == messageId);
+    if (index == -1) return;
+    final msg = history.messages[index];
+    final isPinned = msg['isPinned'] == true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isPinned ? 'Unpin message?' : 'Pin message?'),
+        content: Text(
+          isPinned
+              ? 'Remove this message from pinned messages?'
+              : 'Pin this message so it stays visible at the top?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(isPinned ? 'Unpin' : 'Pin'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final updated = Map<String, dynamic>.from(msg);
+      updated['isPinned'] = !isPinned;
+      history.messages = [
+        for (final i = 0; i < history.messages.length; i++)
+          if (i == index) updated else history.messages[i]
+      ];
+      history.notifyListeners();
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
@@ -938,6 +1032,7 @@ class _MessageBubble extends ConsumerWidget {
                     enabled: isMe && status == null,
                     onEdit: () => onEdit(messageId, rawContent),
                     onDelete: () => _confirmDelete(context, ref, messageId),
+                    onPin: () => _togglePinMessage(context, ref, messageId),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -1159,12 +1254,14 @@ class _OwnMessageMenu extends StatefulWidget {
     required this.enabled,
     required this.onEdit,
     required this.onDelete,
+    this.onPin,
     required this.child,
   });
 
   final bool enabled;
   final VoidCallback? onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onPin;
   final Widget child;
 
   @override
@@ -1194,13 +1291,26 @@ class _OwnMessageMenuState extends State<_OwnMessageMenu> {
                 key: _menuKey,
                 tooltip: 'Message actions',
                 icon: const Icon(Icons.more_horiz, size: 18),
-                onSelected: (value) =>
-                    value == 'edit' ? widget.onEdit?.call() : widget.onDelete(),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      widget.onEdit?.call();
+                    case 'delete':
+                      widget.onDelete();
+                    case 'pin':
+                      widget.onPin?.call();
+                  }
+                },
                 itemBuilder: (_) => [
                   if (widget.onEdit != null)
                     const PopupMenuItem(
                       value: 'edit',
                       child: Text('Edit message'),
+                    ),
+                  if (widget.onPin != null)
+                    const PopupMenuItem(
+                      value: 'pin',
+                      child: Text('Pin message'),
                     ),
                   const PopupMenuItem(
                     value: 'delete',
