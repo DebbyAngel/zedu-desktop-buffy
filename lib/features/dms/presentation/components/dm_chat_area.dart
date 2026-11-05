@@ -928,9 +928,15 @@ class _MessageBubble extends ConsumerWidget {
     final isMe = history.isMyMessage(message);
     // Web and mobile send HTML; show it as the Markdown this bubble renders.
     // A voice note or file sent without text carries an empty paragraph
-    // (`<p></p>`), which becomes no text bubble.
-    final text = htmlMessageToMarkdown(message['content'] as String? ?? '');
-    final content = text.trim().isEmpty ? '' : text;
+    // (`<p></p>`). Show no text bubble for it instead of the literal tags.
+    // Preserve all other angle-bracket text (email addresses, code tags, etc.)
+    // instead of stripping them entirely.
+    final rawContent = message['content'] as String? ?? '';
+    final trimmed = rawContent.trim();
+    final content = trimmed.isEmpty ||
+            RegExp(r'^\s*<[^>]*>\s*$').hasMatch(trimmed)
+        ? ''
+        : rawContent;
     final createdAt =
         DateTime.tryParse(message['created_at']?.toString() ?? '')?.toLocal() ??
         DateTime.now();
