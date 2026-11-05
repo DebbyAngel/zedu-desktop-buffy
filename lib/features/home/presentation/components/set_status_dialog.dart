@@ -106,7 +106,9 @@ class _SetStatusDialogState extends ConsumerState<SetStatusDialog> {
   Future<void> _pickEmoji() async {
     final emoji = await showDialog<String>(
       context: context,
-      builder: (_) => const EmojiPickerDialog(),
+      builder: (context) => DialogEscapeHandler(
+        child: const EmojiPickerDialog(),
+      ),
     );
     if (emoji != null && mounted) setState(() => _selectedEmoji = emoji);
   }

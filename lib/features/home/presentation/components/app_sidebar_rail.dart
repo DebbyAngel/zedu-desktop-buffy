@@ -110,7 +110,9 @@ class _AppSidebarRailState extends ConsumerState<AppSidebarRail> {
               showDialog<void>(
                 context: context,
                 barrierColor: Colors.black.withValues(alpha: 0.3),
-                builder: (context) => const NotificationsDialog(),
+                builder: (context) => DialogEscapeHandler(
+                  child: const NotificationsDialog(),
+                ),
               );
             },
           ),

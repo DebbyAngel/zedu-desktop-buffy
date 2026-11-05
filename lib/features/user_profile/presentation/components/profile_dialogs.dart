@@ -12,7 +12,8 @@ Future<void> showProfileConfirmDialog(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => DialogEscapeHandler(
+      child: AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       title: Text(
         title,
@@ -37,6 +38,7 @@ Future<void> showProfileConfirmDialog(
         ),
       ],
     ),
+  ),
   );
   if (confirmed == true) await onConfirm();
 }
@@ -54,12 +56,13 @@ Future<void> showEditAccountDialog(
 
   await showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      title: Text(
-        'Edit Account',
-        style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-      ),
+    builder: (ctx) => DialogEscapeHandler(
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Edit Account',
+          style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
       content: SizedBox(
         width: 480,
         child: Form(
@@ -119,6 +122,7 @@ Future<void> showEditAccountDialog(
         ),
       ],
     ),
+  ),
   );
 
   nameCtrl.dispose();
@@ -138,7 +142,9 @@ Future<void> showChangePasswordDialog(
 ) {
   return showDialog<void>(
     context: context,
-    builder: (_) => _ChangePasswordDialog(onSave: onSave),
+    builder: (_) => DialogEscapeHandler(
+      child: _ChangePasswordDialog(onSave: onSave),
+    ),
   );
 }
 
@@ -357,12 +363,13 @@ Future<void> showEditOrganizationDialog(
 
   await showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      title: Text(
-        'Edit Organization',
-        style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-      ),
+    builder: (ctx) => DialogEscapeHandler(
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(
+          'Edit Organization',
+          style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
       content: SizedBox(
         width: 480,
         child: Form(
@@ -417,6 +424,7 @@ Future<void> showEditOrganizationDialog(
         ),
       ],
     ),
+  ),
   );
 
   nameCtrl.dispose();
@@ -435,13 +443,13 @@ Future<void> showInviteMemberDialog(
 
   await showDialog<void>(
     context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(
-          'Invite Team Member',
-          style: ctx.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+    builder: (ctx) => DialogEscapeHandler(
+      child: StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Invite Team Member',
+            style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
         content: SizedBox(
@@ -511,6 +519,7 @@ Future<void> showInviteMemberDialog(
         ],
       ),
     ),
+  ),
   );
 
   emailCtrl.dispose();
@@ -526,13 +535,13 @@ Future<void> showEditMemberDialog(
 
   await showDialog<void>(
     context: context,
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setDialogState) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(
-          'Edit Team Member',
-          style: ctx.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
+    builder: (ctx) => DialogEscapeHandler(
+      child: StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Edit Team Member',
+            style: ctx.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
         content: SizedBox(
@@ -591,5 +600,6 @@ Future<void> showEditMemberDialog(
         ],
       ),
     ),
+  ),
   );
 }

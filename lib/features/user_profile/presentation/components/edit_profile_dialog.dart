@@ -69,7 +69,9 @@ Future<void> showEditProfileDialog(
 ) async {
   await showDialog<void>(
     context: context,
-    builder: (context) => _EditProfileDialog(account: account, onSave: onSave),
+    builder: (context) => DialogEscapeHandler(
+      child: _EditProfileDialog(account: account, onSave: onSave),
+    ),
   );
 }
 
